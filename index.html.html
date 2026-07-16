@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CVP Model — Cost-Volume-Profit Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root{
+    --paper:#EBEFE9;
+    --paper-2:#F5F7F2;
+    --ink:#1E2B26;
+    --ink-soft:#4B5A53;
+    --ink-faint:#8A968E;
+    --teal:#2F6F5E;
+    --teal-dark:#1E4A3E;
+    --teal-tint:#DCEAE3;
+    --amber:#B8860B;
+    --amber-dark:#7A5A06;
+    --amber-tint:#F3E7C9;
+    --brick:#A63D40;
+    --brick-dark:#6E2224;
+    --brick-tint:#F1DCDC;
+    --line:#C9D1C6;
+    --line-soft:#DBE1D6;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    line-height:1.5;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 24px 56px;}
+  .masthead{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:16px;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:16px;
+    margin-bottom:24px;
+  }
+  .masthead-left{flex:1;min-width:220px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--teal-dark);
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:30px;
+    margin:0;
+    line-height:1.1;
+  }
+  .company-input{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:30px;
+    border:none;
+    background:transparent;
+    border-bottom:1px dashed var(--ink-faint);
+    padding:0 2px;
+    color:var(--ink);
+    width:auto;
+    min-width:260px;
+    outline:none;
+  }
+  .company-input:focus{border-bottom:1px solid var(--teal);}
+  .subtitle{color:var(--ink-soft);font-size:13px;margin-top:6px;}
+  .as-of{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--ink-faint);
+    text-align:right;
+  }
+
+  .layout{display:grid;grid-template-columns:270px 1fr;gap:22px;align-items:start;}
+  @media (max-width:860px){.layout{grid-template-columns:1fr;}}
+
+  .panel{
+    background:var(--ink);
+    color:var(--paper-2);
+    border-radius:12px;
+    padding:20px 18px;
+    position:sticky;
+    top:20px;
+  }
+  @media (max-width:860px){.panel{position:static;}}
+  .panel h2{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:#9DBBAF;
+    margin:0 0 16px;
+  }
+  .field{margin-bottom:16px;}
+  .field label{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-size:12.5px;
+    color:#C8D3CC;
+    margin-bottom:5px;
+  }
+  .field .unit{color:#7C9186;font-size:11px;}
+  .field input[type=number]{
+    width:100%;
+    background:#28362F;
+    border:1px solid #3D4E45;
+    border-radius:6px;
+    color:#F5F7F2;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    padding:8px 9px;
+    outline:none;
+  }
+  .field input[type=number]:focus{border-color:var(--teal);}
+  .field input[type=range]{
+    width:100%;
+    margin-top:6px;
+    accent-color:#5FA089;
+  }
+  .field-row{display:flex;justify-content:space-between;font-size:11px;color:#7C9186;margin-top:3px;}
+  .divider{border:none;border-top:1px solid #3D4E45;margin:18px 0;}
+  .reset-btn{
+    width:100%;
+    background:transparent;
+    border:1px solid #4A5C52;
+    color:#C8D3CC;
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    padding:9px;
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .reset-btn:hover{background:#28362F;}
+
+  .main{min-width:0;}
+
+  .kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    margin-bottom:22px;
+  }
+  @media (max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+  .kpi{
+    background:var(--paper-2);
+    border:1px solid var(--line-soft);
+    border-radius:var(--radius);
+    padding:14px 15px;
+  }
+  .kpi .label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    margin-bottom:6px;
+  }
+  .kpi .value{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:21px;
+    color:var(--ink);
+  }
+  .kpi .sub{font-size:11.5px;color:var(--ink-soft);margin-top:3px;}
+  .kpi.accent .value{color:var(--teal-dark);}
+  .kpi.warn .value{color:var(--amber-dark);}
+
+  .section{
+    background:var(--paper-2);
+    border:1px solid var(--line-soft);
+    border-radius:12px;
+    padding:20px;
+    margin-bottom:20px;
+  }
+  .section-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .section-head h3{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:18px;
+    margin:0;
+  }
+  .section-head .note{font-size:11.5px;color:var(--ink-faint);}
+
+  .mos-track{
+    position:relative;
+    height:34px;
+    background:linear-gradient(to right, var(--brick-tint) 0%, var(--brick-tint) var(--bepct), var(--teal-tint) var(--bepct), var(--teal-tint) 100%);
+    border-radius:8px;
+    border:1px solid var(--line);
+    margin-top:6px;
+    overflow:visible;
+  }
+  .mos-flag{
+    position:absolute;
+    top:-22px;
+    transform:translateX(-50%);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    color:var(--amber-dark);
+    white-space:nowrap;
+  }
+  .mos-flag::after{
+    content:'';
+    position:absolute;
+    left:50%;
+    top:20px;
+    width:2px;
+    height:14px;
+    background:var(--amber-dark);
+  }
+  .mos-marker{
+    position:absolute;
+    top:6px;
+    width:14px;
+    height:22px;
+    background:var(--teal-dark);
+    border-radius:3px;
+    transform:translateX(-50%);
+  }
+  .mos-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-faint);margin-top:6px;font-family:'IBM Plex Mono',monospace;}
+
+  .target-row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;}
+  .target-field label{font-size:12px;color:var(--ink-soft);display:block;margin-bottom:5px;}
+  .target-field input{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    padding:8px 9px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    width:160px;
+    background:#fff;
+  }
+  .target-result{
+    font-family:'IBM Plex Mono',monospace;
+    background:var(--teal-tint);
+    color:var(--teal-dark);
+    border-radius:8px;
+    padding:12px 16px;
+    font-size:13.5px;
+  }
+  .target-result b{font-size:17px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line-soft);}
+  th:first-child,td:first-child{text-align:left;}
+  thead th{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    font-weight:500;
+    border-bottom:2px solid var(--ink);
+  }
+  tbody td{font-family:'IBM Plex Mono',monospace;}
+  tbody tr:last-child td{border-bottom:none;}
+  .row-base td{background:var(--paper);font-weight:600;}
+  .delta-up{color:var(--brick-dark);}
+  .delta-down{color:var(--teal-dark);}
+
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;color:var(--ink-soft);}
+  .legend span{display:flex;align-items:center;gap:6px;}
+  .swatch{width:11px;height:11px;border-radius:2px;display:inline-block;}
+
+  footer{margin-top:8px;font-size:11px;color:var(--ink-faint);text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="masthead-left">
+      <p class="eyebrow">Cost&#8209;volume&#8209;profit model</p>
+      <h1><input class="company-input" id="companyName" value="Aster &amp; Finch Goods Co." aria-label="Company or product name"></h1>
+      <p class="subtitle">Adjust the inputs on the left — every figure, chart, and table below recalculates instantly.</p>
+    </div>
+    <div class="as-of">Prepared for internal planning<br>All figures illustrative</div>
+  </div>
+
+  <div class="layout">
+
+    <div class="panel">
+      <h2>Model inputs</h2>
+
+      <div class="field">
+        <label>Selling price / unit <span class="unit">$</span></label>
+        <input type="number" id="price" value="50" min="0.01" step="0.5">
+      </div>
+
+      <div class="field">
+        <label>Variable cost / unit <span class="unit">$</span></label>
+        <input type="number" id="vcost" value="30" min="0" step="0.5">
+      </div>
+
+      <div class="field">
+        <label>Fixed costs (total) <span class="unit">$</span></label>
+        <input type="number" id="fcost" value="100000" min="0" step="1000">
+      </div>
+
+      <div class="field">
+        <label>Expected sales volume <span class="unit">units</span></label>
+        <input type="number" id="volume" value="8000" min="0" step="100">
+      </div>
+
+      <div class="field">
+        <label>Tax rate <span class="unit">%</span></label>
+        <input type="number" id="taxrate" value="25" min="0" max="95" step="1">
+      </div>
+
+      <hr class="divider">
+
+      <div class="field">
+        <label>Target profit (after tax) <span class="unit">$</span></label>
+        <input type="number" id="targetprofit" value="50000" step="1000">
+      </div>
+
+      <div class="field">
+        <label>Chart volume range <span class="unit">max units</span></label>
+        <input type="number" id="maxunits" value="15000" min="1000" step="500">
+      </div>
+
+      <hr class="divider">
+      <button class="reset-btn" id="resetBtn">Reset to example values</button>
+    </div>
+
+    <div class="main">
+
+      <div class="kpi-grid">
+        <div class="kpi accent">
+          <div class="label">Contribution margin / unit</div>
+          <div class="value" id="kpiCM">$20.00</div>
+          <div class="sub" id="kpiCMRatio">40.0% of price</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Break-even point</div>
+          <div class="value" id="kpiBEUnits">5,000 u</div>
+          <div class="sub" id="kpiBEValue">$250,000 in sales</div>
+        </div>
+        <div class="kpi warn">
+          <div class="label">Margin of safety</div>
+          <div class="value" id="kpiMOSPct">37.5%</div>
+          <div class="sub" id="kpiMOSUnits">3,000 units above break-even</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Net income at expected volume</div>
+          <div class="value" id="kpiNetIncome">$45,000</div>
+          <div class="sub" id="kpiOpIncome">Pre-tax: $60,000</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h3>Margin of safety</h3>
+          <span class="note" id="mosNote">Expected volume sits above break-even</span>
+        </div>
+        <div class="mos-track" id="mosTrack" style="--bepct:33%;">
+          <div class="mos-flag" id="mosFlag" style="left:33%;">Break-even</div>
+          <div class="mos-marker" id="mosMarker" style="left:100%;"></div>
+        </div>
+        <div class="mos-labels">
+          <span>0 units — loss zone</span>
+          <span id="mosMaxLabel">8,000 units — expected volume</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h3>Target profit analysis</h3>
+        </div>
+        <div class="target-result">
+          To earn <b id="targetProfitEcho">$50,000</b> after tax, sell
+          <b id="targetUnits">7,500</b> units
+          (<span id="targetValue">$375,000</span> in sales) —
+          <span id="targetVsExpected">2,500 more than the expected 8,000 units.</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h3>CVP chart</h3>
+          <span class="note">Revenue, total cost, and fixed cost across the volume range</span>
+        </div>
+        <div class="legend">
+          <span><span class="swatch" style="background:#2a78d6;"></span>Total revenue</span>
+          <span><span class="swatch" style="background:#e34948;"></span>Total cost</span>
+          <span><span class="swatch" style="background:#8A968E;"></span>Fixed cost</span>
+          <span><span class="swatch" style="background:#B8860B;"></span>Break-even point</span>
+        </div>
+        <div style="position:relative;width:100%;height:340px;">
+          <canvas id="cvpChart" role="img" aria-label="Line chart showing total revenue and total cost rising with volume, fixed cost as a flat line, and the break-even point marked where revenue crosses cost.">Chart showing revenue and cost lines crossing at the break-even point.</canvas>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h3>Sensitivity analysis</h3>
+          <span class="note">Break-even point if selling price or variable cost moves &plusmn;10%</span>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Scenario</th><th>Price</th><th>Variable cost</th><th>CM / unit</th><th>Break-even (units)</th><th>vs. base</th></tr>
+          </thead>
+          <tbody id="sensBody"></tbody>
+        </table>
+      </div>
+
+      <footer>CVP model — contribution margin approach. Assumes a single product, linear costs, and constant sales mix.</footer>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt$ = (v, d=0) => '$' + v.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+const fmtN = (v, d=0) => v.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+
+const inputs = {
+  price: $('price'), vcost: $('vcost'), fcost: $('fcost'),
+  volume: $('volume'), taxrate: $('taxrate'),
+  targetprofit: $('targetprofit'), maxunits: $('maxunits')
+};
+
+let chart;
+
+function compute(){
+  const price = Math.max(parseFloat(inputs.price.value) || 0, 0.01);
+  const vcost = Math.max(parseFloat(inputs.vcost.value) || 0, 0);
+  const fcost = Math.max(parseFloat(inputs.fcost.value) || 0, 0);
+  const volume = Math.max(parseFloat(inputs.volume.value) || 0, 0);
+  const taxrate = Math.min(Math.max(parseFloat(inputs.taxrate.value) || 0, 0), 95) / 100;
+  const targetProfit = parseFloat(inputs.targetprofit.value) || 0;
+  const maxUnits = Math.max(parseFloat(inputs.maxunits.value) || 1000, 100);
+
+  const cm = price - vcost;
+  const cmRatio = cm > 0 ? cm / price : 0;
+  const beUnits = cm > 0 ? fcost / cm : NaN;
+  const beValue = beUnits * price;
+
+  const mosUnits = volume - beUnits;
+  const mosValue = mosUnits * price;
+  const mosPct = volume > 0 ? mosUnits / volume : NaN;
+
+  const opIncome = cm * volume - fcost;
+  const tax = Math.max(opIncome, 0) * taxrate;
+  const netIncome = opIncome - tax;
+
+  const preTaxNeeded = targetProfit / (1 - taxrate);
+  const targetUnits = cm > 0 ? (fcost + preTaxNeeded) / cm : NaN;
+  const targetValue = targetUnits * price;
+
+  return {price, vcost, fcost, volume, taxrate, targetProfit, maxUnits,
+           cm, cmRatio, beUnits, beValue, mosUnits, mosValue, mosPct,
+           opIncome, tax, netIncome, targetUnits, targetValue, preTaxNeeded};
+}
+
+function renderKPIs(r){
+  $('kpiCM').textContent = fmt$(r.cm, 2);
+  $('kpiCMRatio').textContent = (r.cmRatio*100).toFixed(1) + '% of price';
+
+  $('kpiBEUnits').textContent = (isFinite(r.beUnits) ? fmtN(Math.ceil(r.beUnits)) : '—') + ' u';
+  $('kpiBEValue').textContent = isFinite(r.beValue) ? fmt$(r.beValue) + ' in sales' : 'CM is zero or negative';
+
+  $('kpiMOSPct').textContent = isFinite(r.mosPct) ? (r.mosPct*100).toFixed(1) + '%' : '—';
+  $('kpiMOSUnits').textContent = isFinite(r.mosUnits)
+    ? (r.mosUnits >= 0
+        ? fmtN(Math.round(r.mosUnits)) + ' units above break-even'
+        : fmtN(Math.round(-r.mosUnits)) + ' units below break-even')
+    : '—';
+
+  $('kpiNetIncome').textContent = fmt$(Math.round(r.netIncome));
+  $('kpiOpIncome').textContent = 'Pre-tax: ' + fmt$(Math.round(r.opIncome));
+}
+
+function renderMOS(r){
+  const track = $('mosTrack');
+  const bePct = r.volume > 0 && isFinite(r.beUnits) ? Math.min(Math.max(r.beUnits / r.volume, 0), 1) * 100 : 100;
+  track.style.setProperty('--bepct', bePct + '%');
+  $('mosFlag').style.left = bePct + '%';
+  $('mosMarker').style.left = '100%';
+  $('mosMaxLabel').textContent = fmtN(Math.round(r.volume)) + ' units — expected volume';
+  $('mosNote').textContent = r.mosUnits >= 0
+    ? 'Expected volume sits above break-even'
+    : 'Expected volume is below break-even';
+}
+
+function renderTarget(r){
+  $('targetProfitEcho').textContent = fmt$(r.targetProfit);
+  $('targetUnits').textContent = isFinite(r.targetUnits) ? fmtN(Math.ceil(r.targetUnits)) : '—';
+  $('targetValue').textContent = isFinite(r.targetValue) ? fmt$(Math.round(r.targetValue)) : '—';
+  if(isFinite(r.targetUnits)){
+    const diff = r.targetUnits - r.volume;
+    $('targetVsExpected').textContent = diff >= 0
+      ? fmtN(Math.round(diff)) + ' more than the expected ' + fmtN(Math.round(r.volume)) + ' units.'
+      : fmtN(Math.round(-diff)) + ' fewer than the expected ' + fmtN(Math.round(r.volume)) + ' units.';
+  } else {
+    $('targetVsExpected').textContent = 'not achievable — contribution margin is zero or negative.';
+  }
+}
+
+function renderSensitivity(r){
+  const rows = [
+    {label:'Price +10%', price: r.price*1.1, vcost: r.vcost},
+    {label:'Base case', price: r.price, vcost: r.vcost, base:true},
+    {label:'Price -10%', price: r.price*0.9, vcost: r.vcost},
+    {label:'Variable cost +10%', price: r.price, vcost: r.vcost*1.1},
+    {label:'Variable cost -10%', price: r.price, vcost: r.vcost*0.9},
+  ];
+  const body = $('sensBody');
+  body.innerHTML = '';
+  rows.forEach(row => {
+    const cm = row.price - row.vcost;
+    const be = cm > 0 ? r.fcost / cm : NaN;
+    const deltaUnits = be - r.beUnits;
+    const tr = document.createElement('tr');
+    if(row.base) tr.className = 'row-base';
+    let deltaCell = '—';
+    if(!row.base && isFinite(deltaUnits)){
+      const cls = deltaUnits > 0 ? 'delta-up' : (deltaUnits < 0 ? 'delta-down' : '');
+      const sign = deltaUnits > 0 ? '+' : '';
+      deltaCell = '<span class="'+cls+'">' + sign + fmtN(Math.round(deltaUnits)) + ' u</span>';
+    }
+    tr.innerHTML = `
+      <td>${row.label}</td>
+      <td>${fmt$(row.price, 2)}</td>
+      <td>${fmt$(row.vcost, 2)}</td>
+      <td>${fmt$(cm, 2)}</td>
+      <td>${isFinite(be) ? fmtN(Math.ceil(be)) : '—'}</td>
+      <td>${deltaCell}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function renderChart(r){
+  const steps = 40;
+  const stepSize = r.maxUnits / steps;
+  const labels = [];
+  const revenue = [];
+  const totalCost = [];
+  const fixedCost = [];
+  for(let i=0;i<=steps;i++){
+    const u = Math.round(i * stepSize);
+    labels.push(fmtN(u));
+    revenue.push(u * r.price);
+    totalCost.push(r.fcost + u * r.vcost);
+    fixedCost.push(r.fcost);
+  }
+
+  const ctx = $('cvpChart');
+  if(chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'Total revenue', data: revenue, borderColor:'#2a78d6', backgroundColor:'rgba(42,120,214,0.06)', borderWidth:2, pointRadius:0, tension:0, fill:false },
+        { label:'Total cost', data: totalCost, borderColor:'#e34948', borderWidth:2, pointRadius:0, tension:0, fill:false },
+        { label:'Fixed cost', data: fixedCost, borderColor:'#8A968E', borderWidth:1.5, borderDash:[5,4], pointRadius:0, tension:0, fill:false },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label: (item) => item.dataset.label + ': ' + fmt$(Math.round(item.parsed.y))
+          }
+        },
+        annotation: undefined
+      },
+      scales:{
+        x:{ title:{display:true, text:'Units sold'}, ticks:{maxTicksLimit:10, autoSkip:true}, grid:{color:'#E1E0D9'} },
+        y:{ title:{display:true, text:'Dollars'}, ticks:{ callback:(v)=>'$'+ (v/1000) + 'k' }, grid:{color:'#E1E0D9'} }
+      }
+    }
+  });
+
+  if(isFinite(r.beUnits) && r.beUnits <= r.maxUnits && r.beUnits >= 0){
+    drawBreakEvenMarker(r);
+  }
+}
+
+function drawBreakEvenMarker(r){
+  const canvas = $('cvpChart');
+  canvas.onclick = null;
+  const existing = document.getElementById('beLabel');
+  if(existing) existing.remove();
+
+  const chartArea = chart.chartArea;
+  const xScale = chart.scales.x;
+  const yScale = chart.scales.y;
+  const beIndex = (r.beUnits / r.maxUnits) * (chart.data.labels.length - 1);
+  const px = xScale.getPixelForValue(beIndex);
+  const py = yScale.getPixelForValue(r.beValue);
+
+  const wrapper = canvas.parentElement;
+  const label = document.createElement('div');
+  label.id = 'beLabel';
+  label.style.position = 'absolute';
+  label.style.left = px + 'px';
+  label.style.top = (py - 34) + 'px';
+  label.style.transform = 'translateX(-50%)';
+  label.style.fontFamily = "'IBM Plex Mono', monospace";
+  label.style.fontSize = '11px';
+  label.style.color = '#7A5A06';
+  label.style.background = '#F3E7C9';
+  label.style.padding = '3px 7px';
+  label.style.borderRadius = '5px';
+  label.style.whiteSpace = 'nowrap';
+  label.style.pointerEvents = 'none';
+  label.textContent = 'BEP: ' + fmtN(Math.ceil(r.beUnits)) + ' u';
+  wrapper.style.position = 'relative';
+  wrapper.appendChild(label);
+
+  const dot = document.createElement('div');
+  dot.style.position = 'absolute';
+  dot.style.left = px + 'px';
+  dot.style.top = py + 'px';
+  dot.style.width = '9px';
+  dot.style.height = '9px';
+  dot.style.borderRadius = '50%';
+  dot.style.background = '#B8860B';
+  dot.style.transform = 'translate(-50%,-50%)';
+  dot.style.pointerEvents = 'none';
+  wrapper.appendChild(dot);
+}
+
+function renderAll(){
+  const r = compute();
+  renderKPIs(r);
+  renderMOS(r);
+  renderTarget(r);
+  renderSensitivity(r);
+  renderChart(r);
+}
+
+Object.values(inputs).forEach(el => el.addEventListener('input', renderAll));
+
+$('resetBtn').addEventListener('click', () => {
+  inputs.price.value = 50;
+  inputs.vcost.value = 30;
+  inputs.fcost.value = 100000;
+  inputs.volume.value = 8000;
+  inputs.taxrate.value = 25;
+  inputs.targetprofit.value = 50000;
+  inputs.maxunits.value = 15000;
+  renderAll();
+});
+
+renderAll();
+</script>
+</body>
+</html>
